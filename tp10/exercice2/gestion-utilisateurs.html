@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Gestion des utilisateurs</title>
 
     <link rel="stylesheet" href="gestion-utilisateurs.css">
@@ -17,6 +20,8 @@
 
     <p id="message"></p>
 
+    <!-- Tableau des utilisateurs -->
+
     <table>
 
         <thead>
@@ -27,13 +32,16 @@
                 <th>Date de naissance</th>
                 <th>Lieu de naissance</th>
                 <th>Adresse</th>
-                <th>Action</th>
+                <th>Actions</th>
             </tr>
         </thead>
 
         <tbody id="liste-utilisateurs"></tbody>
 
     </table>
+
+
+    
 
     <dialog id="formulaire-dialogue">
 
@@ -50,6 +58,7 @@
             <input type="text" id="prenom" required>
 
             <label>Genre :</label>
+
             <select id="genre" required>
                 <option value="">Choisir</option>
                 <option value="M">Masculin</option>

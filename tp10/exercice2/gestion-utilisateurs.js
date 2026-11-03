@@ -1,82 +1,47 @@
-const URL = "https://digicode.cleverapps.io/utilisateurs";
 
-// Remplace par ton pseudo
-const ID_CREATEUR = "MonPseudoIci";
+const URL = "https://digicode.cleverapps.io/utilisateurs/";
+
+// Identifiant du créateur
+const ID_CREATEUR = "TonPseudo";
+
 
 let utilisateurs = [];
 
 const tableau = document.getElementById("liste-utilisateurs");
 
-const dialogue = document.getElementById("formulaire-dialogue");
-
 const formulaire = document.getElementById("formulaire");
+
+const dialogue = document.getElementById("formulaire-dialogue");
 
 const message = document.getElementById("message");
 
-
-// FONCTION POUR EFFECTUER LES REQUETES API
-
-async function requete(url, options = {}) {
-
-    const reponse = await fetch(url, {
-
-        ...options,
-
-        headers: {
-            "Content-Type": "application/json"
-        }
-
-    });
-
-    const texte = await reponse.text();
-
-    let resultat = null;
-
-    try {
-        resultat = texte ? JSON.parse(texte) : null;
-    } catch {
-        resultat = texte;
-    }
-
-    if (!reponse.ok) {
-
-        throw new Error(
-            resultat?.message || resultat?.error || texte || "Erreur serveur"
-        );
-
-    }
-
-    return resultat;
-
-}
-
-
-// 1. RECUPERER LES UTILISATEURS
 
 async function chargerUtilisateurs() {
 
     try {
 
-        utilisateurs = await requete(
-            `${URL}/${ID_CREATEUR}`
-        );
+        const reponse = await fetch(URL + ID_CREATEUR);
 
-        if (!Array.isArray(utilisateurs)) {
-            utilisateurs = utilisateurs.data || utilisateurs.utilisateurs || [];
+        if (!reponse.ok) {
+            throw new Error("Impossible de récupérer les utilisateurs.");
         }
+
+        const donnees = await reponse.json();
+
+        utilisateurs = Array.isArray(donnees)
+            ? donnees
+            : donnees.data || donnees.utilisateurs || [];
 
         afficherUtilisateurs();
 
     } catch (erreur) {
 
-        message.textContent = "Erreur : " + erreur.message;
+        message.textContent = erreur.message;
 
     }
 
 }
 
-
-// 2. AFFICHER LES UTILISATEURS
 
 function afficherUtilisateurs() {
 
@@ -86,35 +51,69 @@ function afficherUtilisateurs() {
 
         const ligne = document.createElement("tr");
 
-        ligne.innerHTML = `
-            <td>${utilisateur.id ?? ""}</td>
-            <td>${utilisateur.nom ?? ""}</td>
-            <td>${utilisateur.prenom ?? ""}</td>
-            <td>${utilisateur.dateNaissance ?? ""}</td>
-            <td>${utilisateur.lieuNaissance ?? ""}</td>
-            <td>${utilisateur.numeroRue ?? ""} ${utilisateur.libelleRue ?? ""},
-                ${utilisateur.codePostal ?? ""} ${utilisateur.ville ?? ""}
-            </td>
-            <td>
-                <button onclick="modifierUtilisateur(${utilisateur.id})">
-                    Modifier
-                </button>
+        const adresse = `${utilisateur.numeroRue ?? ""} ${utilisateur.libelleRue ?? ""}, ${utilisateur.codePostal ?? ""} ${utilisateur.ville ?? ""}`;
 
-                <button class="supprimer"
-                    onclick="supprimerUtilisateur(${utilisateur.id})">
-                    🗑
-                </button>
-            </td>
-        `;
+        const valeurs = [
+            utilisateur.id,
+            utilisateur.nom,
+            utilisateur.prenom,
+            utilisateur.dateNaissance,
+            utilisateur.lieuNaissance,
+            adresse
+        ];
+
+        valeurs.forEach(valeur => {
+
+            const cellule = document.createElement("td");
+
+            cellule.textContent = valeur ?? "";
+
+            ligne.appendChild(cellule);
+
+        });
+
+        const actions = document.createElement("td");
+
+        const boutonModifier = document.createElement("button");
+
+        boutonModifier.textContent = "Modifier";
+
+        boutonModifier.className = "modifier";
+
+        boutonModifier.addEventListener("click", function() {
+            modifierUtilisateur(utilisateur.id);
+        });
+
+        const boutonSupprimer = document.createElement("button");
+
+        boutonSupprimer.textContent = "🗑";
+
+        boutonSupprimer.className = "supprimer";
+
+        boutonSupprimer.addEventListener("click", function() {
+            supprimerUtilisateur(utilisateur.id);
+        });
+
+        actions.append(boutonModifier, boutonSupprimer);
+
+        ligne.appendChild(actions);
 
         tableau.appendChild(ligne);
 
     });
 
+    if (utilisateurs.length === 0) {
+
+        tableau.innerHTML = `
+            <tr>
+                <td colspan="7">Aucun utilisateur trouvé.</td>
+            </tr>
+        `;
+
+    }
+
 }
 
-
-// 3. OUVRIR LE FORMULAIRE D'AJOUT
 
 document.getElementById("ajouter").addEventListener("click", function() {
 
@@ -128,8 +127,6 @@ document.getElementById("ajouter").addEventListener("click", function() {
 
 });
 
-
-// 4. RECUPERER LES DONNEES DU FORMULAIRE
 
 function recupererDonnees() {
 
@@ -166,38 +163,35 @@ function recupererDonnees() {
 }
 
 
-// 5. AJOUTER OU MODIFIER UN UTILISATEUR
-
-formulaire.addEventListener("submit", async function(event) {
-
-    event.preventDefault();
-
-    const utilisateur = recupererDonnees();
-
-    const id = utilisateur.id;
-
-    const estCreation = id === null;
-
-    const url = estCreation
-        ? URL + "/"
-        : `${URL}/${id}`;
-
-    const methode = estCreation ? "POST" : "PUT";
+async function ajouterUtilisateur(utilisateur) {
 
     try {
 
-        const resultat = await requete(url, {
+        const reponse = await fetch(URL, {
 
-            method: methode,
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
 
             body: JSON.stringify(utilisateur)
 
         });
 
+        const resultat = await reponse.json();
+
+        if (!reponse.ok) {
+
+            throw new Error(resultat.message || resultat.error || "Erreur lors de la création.");
+
+        }
+
+        message.textContent = "Utilisateur créé avec succès !";
+
         dialogue.close();
 
-        message.textContent = resultat?.message ||
-            (estCreation ? "Utilisateur créé !" : "Utilisateur modifié !");
+        formulaire.reset();
 
         chargerUtilisateurs();
 
@@ -207,16 +201,13 @@ formulaire.addEventListener("submit", async function(event) {
 
     }
 
-});
+}
 
 
-// 6. MODIFIER UN UTILISATEUR
 
-function modifierUtilisateur(id) {
+async function modifierUtilisateur(id) {
 
-    const utilisateur = utilisateurs.find(
-        element => element.id == id
-    );
+    const utilisateur = utilisateurs.find(element => element.id == id);
 
     if (!utilisateur) return;
 
@@ -239,26 +230,82 @@ function modifierUtilisateur(id) {
 }
 
 
-// 7. SUPPRIMER UN UTILISATEUR
-
 async function supprimerUtilisateur(id) {
 
-    const confirmation = confirm(
-        "Voulez-vous vraiment supprimer cet utilisateur ?"
-    );
+    const confirmation = confirm("Voulez-vous vraiment supprimer cet utilisateur ?");
 
     if (!confirmation) return;
 
     try {
 
-        const resultat = await requete(
-            `${URL}/${ID_CREATEUR}/${id}`,
-            {
-                method: "DELETE"
-            }
-        );
+        const reponse = await fetch(URL + ID_CREATEUR + "/" + id, {
 
-        message.textContent = resultat?.message || "Utilisateur supprimé !";
+            method: "DELETE"
+
+        });
+
+        if (!reponse.ok) {
+            throw new Error("Erreur lors de la suppression.");
+        }
+
+        message.textContent = "Utilisateur supprimé avec succès !";
+
+        chargerUtilisateurs();
+
+    } catch (erreur) {
+
+        message.textContent = erreur.message;
+
+    }
+
+}
+
+
+formulaire.addEventListener("submit", function(event) {
+
+    event.preventDefault();
+
+    const utilisateur = recupererDonnees();
+
+    if (utilisateur.id === null) {
+
+        ajouterUtilisateur(utilisateur);
+
+    } else {
+
+        modifierAvecPUT(utilisateur);
+
+    }
+
+});
+
+
+
+async function modifierAvecPUT(utilisateur) {
+
+    try {
+
+        const reponse = await fetch(URL + utilisateur.id, {
+
+            method: "PUT",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(utilisateur)
+
+        });
+
+        const resultat = await reponse.json();
+
+        if (!reponse.ok) {
+            throw new Error(resultat.message || resultat.error || "Erreur de modification.");
+        }
+
+        message.textContent = "Utilisateur modifié avec succès !";
+
+        dialogue.close();
 
         chargerUtilisateurs();
 
@@ -271,7 +318,6 @@ async function supprimerUtilisateur(id) {
 }
 
 
-// 8. FERMER LE FORMULAIRE
 
 document.getElementById("annuler").addEventListener("click", function() {
 
@@ -280,6 +326,5 @@ document.getElementById("annuler").addEventListener("click", function() {
 });
 
 
-// CHARGEMENT INITIAL
 
 chargerUtilisateurs();
