@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Tableau des pays</title>
+
+    <script src="affichagePaysEtCapitale.js" defer></script>
+</head>
+
+<body onload="chargerPays()">
+
+    <h1>Liste des pays et leurs informations</h1>
+
+    <table border="1" width="800">
+
+        <thead>
+            <tr>
+                <th>Pays</th>
+                <th>Capitale</th>
+                <th id="colonnePopulation">
+                    Population
+                    <button id="triPopulation">↕</button>
+                </th>
+                <th>Région</th>
+            </tr>
+        </thead>
+
+        <tbody id="corps"></tbody>
+
+    </table>
+
+</body>
+</html>
